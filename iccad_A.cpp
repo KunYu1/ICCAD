@@ -264,35 +264,35 @@ int main() {
         switch (logic_map[temp_k])
         {
             case 0:
-                first_net_f>>gate_name>>temp_k>>input_1>>temp_k>>output>>temp_k>>temp_k;
+                first_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>temp_k;
                 first_circuit.gates.push_back(Gate(0,gate_name,input_1,input_2,output));
                 break;
             case 1:
-                first_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                first_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 first_circuit.gates.push_back(Gate(1,gate_name,input_1,input_2,output));
                 break;
             case 2:
-                first_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                first_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 first_circuit.gates.push_back(Gate(2,gate_name,input_1,input_2,output));
                 break;
             case 3:
-                first_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                first_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 first_circuit.gates.push_back(Gate(3,gate_name,input_1,input_2,output));
                 break;
             case 4:
-                first_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                first_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 first_circuit.gates.push_back(Gate(4,gate_name,input_1,input_2,output));
                 break;
             case 5:
-                first_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                first_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 first_circuit.gates.push_back(Gate(5,gate_name,input_1,input_2,output));
                 break;
             case 6:
-                first_net_f>>gate_name>>temp_k>>input_1>>temp_k>>output>>temp_k>>temp_k;
+                first_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>temp_k;
                 first_circuit.gates.push_back(Gate(6,gate_name,input_1,input_2,output));
                 break;
             case 7:
-                first_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                first_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 first_circuit.gates.push_back(Gate(7,gate_name,input_1,input_2,output));
                 break;
             default:
@@ -333,35 +333,35 @@ int main() {
         switch (logic_map[temp_k])
         {
             case 0:
-                second_net_f>>gate_name>>temp_k>>input_1>>temp_k>>output>>temp_k>>temp_k;
+                second_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>temp_k;
                 second_circuit.gates.push_back(Gate(0,gate_name,input_1,input_2,output));
                 break;
             case 1:
-                second_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                second_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 second_circuit.gates.push_back(Gate(1,gate_name,input_1,input_2,output));
                 break;
             case 2:
-                second_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                second_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 second_circuit.gates.push_back(Gate(2,gate_name,input_1,input_2,output));
                 break;
             case 3:
-                second_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                second_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 second_circuit.gates.push_back(Gate(3,gate_name,input_1,input_2,output));
                 break;
             case 4:
-                second_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                second_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 second_circuit.gates.push_back(Gate(4,gate_name,input_1,input_2,output));
                 break;
             case 5:
-                second_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                second_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 second_circuit.gates.push_back(Gate(5,gate_name,input_1,input_2,output));
                 break;
             case 6:
-                second_net_f>>gate_name>>temp_k>>input_1>>temp_k>>output>>temp_k>>temp_k;
+                second_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>temp_k;
                 second_circuit.gates.push_back(Gate(6,gate_name,input_1,input_2,output));
                 break;
             case 7:
-                second_net_f>>gate_name>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>output>>temp_k>>temp_k;
+                second_net_f>>gate_name>>temp_k>>output>>temp_k>>input_1>>temp_k>>input_2>>temp_k>>temp_k;
                 second_circuit.gates.push_back(Gate(7,gate_name,input_1,input_2,output));
                 break;
             default:
@@ -369,43 +369,7 @@ int main() {
         }
     }
     
-    int tempn = 0;
-    for(Gate g:first_circuit.gates)
-    	tempn ++;  
-    for(int i=0 ; i<tempn ; i++)
-    	if(first_circuit.gates[i].logic != 0)
-    	{
-    		string temp = first_circuit.gates[i].output;
-    		first_circuit.gates[i].output = first_circuit.gates[i].input1;
-    		first_circuit.gates[i].input1 = first_circuit.gates[i].input2;
-    		first_circuit.gates[i].input2 = temp;
-		}
-		else if(first_circuit.gates[i].logic == 0)
-		{
-			string temp = first_circuit.gates[i].input1;
-			first_circuit.gates[i].input1 = first_circuit.gates[i].output;
-			first_circuit.gates[i].output = temp;
-		}
-	
-	tempn = 0;
-    for(Gate g:second_circuit.gates)
-    	tempn ++;
-    for(int i=0 ; i<tempn ; i++)
-    	if(second_circuit.gates[i].logic != 0)
-    	{
-    		string temp = second_circuit.gates[i].output;
-    		second_circuit.gates[i].output = second_circuit.gates[i].input1;
-    		second_circuit.gates[i].input1 = second_circuit.gates[i].input2;
-    		second_circuit.gates[i].input2 = temp;
-		}
-		else if(second_circuit.gates[i].logic == 0)
-		{
-			string temp = second_circuit.gates[i].input1;
-			second_circuit.gates[i].input1 = second_circuit.gates[i].output;
-			second_circuit.gates[i].output = temp;
-		}
-	
-    
+   
     cout<<endl<<"First Circuit logic gate:"<<endl;
     
     for(Gate g:first_circuit.gates){
@@ -435,7 +399,6 @@ int main() {
     second_net_f.close();
     return 0;
 }
-
 
 
 
