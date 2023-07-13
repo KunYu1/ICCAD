@@ -6,6 +6,8 @@
 #include <set>
 #include <algorithm>
 #include <sstream>
+#include<cstdlib>
+#include<time.h>
 using namespace std;
 
 map<string, int> logic_map{
@@ -108,8 +110,6 @@ int find_gateind(vector<RNode*> gates, string output)
 	return -1;
 }
 
-RNode* create_graph_recur(string, vector<RNode*>, bool*, vector<string>);
-
 vector<RNode*> create_graph(vector<Gate> gates_t, vector<string> inputs, vector<string> outputs)
 {
 	// Use RNode to store the gates information
@@ -158,6 +158,7 @@ vector<RNode*> create_graph(vector<Gate> gates_t, vector<string> inputs, vector<
 
 string graph2func(RNode *root, vector<string> inputs)
 {
+//	cout<<"Graph-2-function: "<<root->gate.name<<";  Output: "<<root->gate.output;
 	int logic = root->gate.logic;
 	string first = "";	
 	string second = "";
@@ -168,13 +169,20 @@ string graph2func(RNode *root, vector<string> inputs)
 		if(root->gate.input2 == inputs[i]) second = inputs[i];
 	}
 	
+//	cout<<";  First: "<<first<<endl;
 	if(first == "")
+	{
+//		cout<<"From "<<root->gate.name<<" first go to ";
 		first = graph2func(root->last1, inputs);
-	if(second == "" && logic != 0)
+	}
+	if(second == "" && logic != 0 && logic != 6)
+	{
+//		cout<<"From "<<root->gate.name<<" second go to ";
 		second = graph2func(root->last2, inputs);
+	}
 	
 	string ans = "";
-	if(logic != 0)
+	if(logic != 0 && logic != 6)
 	{
 		ans += "(";
 		ans += first; ans += " ";
@@ -182,14 +190,70 @@ string graph2func(RNode *root, vector<string> inputs)
 		ans += second;
 		ans += ")";	
 	}
-	else
+	else if(logic == 0)
 	{
 		ans += "(not ";
 		ans += first;
 		ans += ")"; 
 	}
-		
+	else if(logic == 6)
+	{
+		ans += "(buf ";
+		ans += first;
+		ans += ")";
+	}
+	
 	return ans;
+}
+
+bool gate_operate(int logic, bool a, bool b)
+{
+	switch(logic)
+	{
+		case 0: // not
+			return !a;
+		case 1: // and
+			return a & b;
+		case 2: // or
+			return a | b;
+		case 3: // nor
+			return !(a | b);
+		case 4: // xnor
+			return !(a != b);
+		case 5: // xor
+			return a != b;
+		case 6: //buf
+			return b;
+		case 7: //nand
+			return !(a & b);
+		default:
+			return false;
+	}
+}
+
+bool circuit_operate(RNode* root, vector<pair<string, bool>> inputs)
+{
+	bool input1, input2, flag1, flag2;
+	flag1 = false; flag2 = false;
+	bool ifinput2 = !(root->gate.logic==0 || root->gate.logic==1);
+	
+	for(int i=0 ; i<inputs.size() ; i++)
+		if(root->gate.input1 == inputs[i].first)
+		{
+			input1 = inputs[i].second;
+			flag1 = true;
+		}
+	for(int i=0 ; i<inputs.size() && ifinput2 ; i++)
+		if(root->gate.input2 == inputs[i].first)
+		{
+			input2 = inputs[i].second;
+			flag2 = true;
+		}
+	
+	if(!flag1) input1 = circuit_operate(root->last1, inputs);
+	if(!flag2 && ifinput2) input2 = circuit_operate(root->last2, inputs);
+	
+	return gate_operate(root->gate.logic, input1, input2);
 }
 
 void print_circuit(const Circuit first_circuit, const Circuit second_circuit)
@@ -228,7 +292,7 @@ void print_map(const IOMap target_map)
         cout<<ele.first<<": ";
         for(string const& k:ele.second)
             cout<<k<<" ";
-        cout<<endl;
+        cout<<endl<<endl;
     }
     cout<<endl;
 }
@@ -266,8 +330,9 @@ void construct_supmap(const vector<RNode*> all_root, IOMap& inmap, IOMap& outmap
 
 bool compareStrings(const string& str1, const string& str2, const IOMap& iomap, map<string, vector<int>> sup_map)
 {
-    if(iomap.iomap.at(str1).size() != iomap.iomap.at(str2).size())
+    if(iomap.iomap.at(str1).size() != iomap.iomap.at(str2).size()){
         return iomap.iomap.at(str1).size() < iomap.iomap.at(str2).size();
+    }
     else    
     {
         for(int i = 0; i < sup_map[str1].size(); i++)
@@ -275,7 +340,7 @@ bool compareStrings(const string& str1, const string& str2, const IOMap& iomap, 
             if(sup_map[str1][i] != sup_map[str2][i])
                 return sup_map[str1][i] < sup_map[str2][i];
         }
-        return 1;
+        return false;
     }
 }
 
@@ -377,6 +442,8 @@ vector<vector<string>> sort_sup(vector<string> nodes,IOMap primaryMap, IOMap sec
     vector<vector<string>> sup;
     vector<string> input;
     map<string, vector<int>> node_supmap;
+    for(string k:input)
+        cout<<k<<endl;
     for(const auto& ele: primaryMap.iomap)
     {
         for(string k: ele.second)
@@ -385,18 +452,19 @@ vector<vector<string>> sort_sup(vector<string> nodes,IOMap primaryMap, IOMap sec
     }
 
     input.assign(nodes.begin(), nodes.end());
-    sort(input.begin(),input.end(), [&](const string& str1, const string& str2){
+    sort(input.begin(),input.end(), [&](string str1, string str2){
         return compareStrings(str1,str2, primaryMap, node_supmap);
     });
 
-//Debug
-    // for(string k :input){
-    //     cout<<k<<" "<<primaryMap.iomap[k].size()<<": ";
-    //     for(int i: node_supmap[k])
-    //         cout<<i<<" ";
-    //     cout<<endl;
-    // }
-
+// Debug
+/*
+    for(string k :input){
+        cout<<k<<" "<<primaryMap.iomap[k].size()<<": ";
+        for(int i: node_supmap[k])
+            cout<<i<<" ";
+        cout<<endl;
+    }
+*/
     vector<string> currentGroup;
     currentGroup.push_back(input[0]);
     for(int i = 1; i < input.size(); i++)
@@ -426,11 +494,16 @@ void print_sup(vector<vector<string>> sup){
     cout<<endl;
 }
 
+bool verify(RNode* output1, RNode* output2, vector<pair<string, bool>> inputs)
+{
+	return circuit_operate(output1, inputs) == circuit_operate(output2, inputs);
+}
+
 int main() {
     string input_name;
     cout << "Please input your input ford name:";
     cin>>input_name;
-	// input_name = "1";
+	// input_name = "case02";
     ifstream file(input_name+"/input");
     if (!file) {
         cout << "Can't open input file!" << endl;
@@ -486,18 +559,50 @@ int main() {
     
     vector<RNode*> first_circuit_roots = create_graph(first_circuit.gates, first_circuit.input, first_circuit.output);
     vector<RNode*> second_circuit_roots = create_graph(second_circuit.gates, second_circuit.input, second_circuit.output);
-    
-    print_booleanfunc(first_circuit, second_circuit,first_circuit_roots, second_circuit_roots);
+	
+//  Calculate boolean function output value
 
+/*	
+    srand(time(NULL));
+	vector<pair<string, bool>> input_t;
+	for(int i=0 ; i<first_circuit.input.size() ; i++)
+	{
+		pair<string, bool> temp;
+		temp.first = first_circuit.input[i];
+		temp.second = rand()%2 ? true : false;
+		input_t.push_back(temp);
+	}
+	
+	cout<<"Input of Circuit 1: "<<endl;
+	for(int i=0 ; i<input_t.size() ; i++)
+		cout<<input_t[i].first<<" = "<<input_t[i].second<<endl;
+	cout<<endl;
+	
+	cout<<"Output of Circuit 1: "<<endl;
+	for(int i=0 ; i<first_circuit_roots.size() ; i++)
+		cout<<first_circuit_roots[i]->gate.output<<" = "<<circuit_operate(first_circuit_roots[i], input_t)<<endl;
+	cout<<endl;
+*/    
+
+
+//  Debug Boolean function
+
+/*
+    print_booleanfunc(first_circuit, second_circuit,first_circuit_roots, second_circuit_roots);
+*/
     construct_supmap(first_circuit_roots, first_inout, first_outin);
     construct_supmap(second_circuit_roots, second_inout, second_outin);
 
+//  Debug in/out map
+
+/*
     cout<<"Circuit1"<<endl;
     print_map(first_inout);
     print_map(first_outin);
     cout<<"Circuit2"<<endl;
     print_map(second_inout);
     print_map(second_outin);
+*/
 
     cout<<"Circuit1"<<endl;
     vector<vector<string>> first_insup = sort_sup(first_circuit.input, first_inout, first_outin);
@@ -509,7 +614,9 @@ int main() {
     print_sup(second_insup);
     vector<vector<string>> second_outsup = sort_sup(second_circuit.output, second_outin, second_inout);
     print_sup(second_outsup);
- 
+    
+    cout<<"Finished."<<endl;
+        
     return 0;
 }
 
