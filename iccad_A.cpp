@@ -32,6 +32,17 @@ map<int, string> logic_map_rev{
 	{7, "nand"},
 };
 
+struct IOnode{
+    int circuit;
+    bool positvie;
+    string name;
+};
+struct IOgroup
+{
+    vector<IOnode> node_list;
+};
+
+
 struct Gate {
     int logic;
     string name;
@@ -328,7 +339,50 @@ void construct_supmap(const vector<RNode*> all_root, IOMap& inmap, IOMap& outmap
     }
 }
 
-bool compareStrings(const string& str1, const string& str2, const IOMap& iomap, map<string, vector<int>> sup_map)
+bool obsCal(vector<RNode*> circuit_root,vector<string> input, string input_a, string input_b)
+{
+    vector<pair<string, bool>> inputv_origin;
+    vector<pair<string, bool>> inputv_a;
+    vector<pair<string, bool>> inputv_b;
+	for(int i=0 ; i<input.size() ; i++)
+	{
+        inputv_origin.push_back(make_pair(input[i], true));
+        if(input[i] != input_a && input[i] != input_b)
+        {
+		    inputv_a.push_back(make_pair(input[i], true));
+            inputv_b.push_back(make_pair(input[i], true));
+        } else if(input[i] == input_a)
+        {
+		    inputv_a.push_back(make_pair(input[i], false));
+            inputv_b.push_back(make_pair(input[i], true));            
+        } else if(input[i] == input_b)
+        {
+		    inputv_a.push_back(make_pair(input[i], true));
+            inputv_b.push_back(make_pair(input[i], false)); 
+        }
+	}
+    // for(const auto& k: inputv_a)
+    //     cout<<k.first<<" "<<k.second<<endl;
+    // cout<<"Size: "<<circuit_root.size()<<endl;
+	// for(int i=0 ; i<circuit_root.size() ; i++)
+    // {
+    //     cout<<i<<endl;
+	// 	cout<<circuit_root[i]->gate.output<<" = "<<circuit_operate(circuit_root[i], inputv_a)<<endl;
+    // }
+    int obs_a = 0;
+    int obs_b = 0;
+    // for(int i=0 ; i<circuit_root.size() ; i++)
+    // {
+    //     bool ori = circuit_operate(circuit_root[i], inputv_origin);
+    //     bool a_result = circuit_operate(circuit_root[i], inputv_a);
+    //     bool b_result = circuit_operate(circuit_root[i], inputv_b);
+    //     obs_a += (a_result == ori)? 0:1;
+    //     obs_b += (b_result == ori)? 0:1;
+    // }
+    return obs_a < obs_b;
+}
+
+bool compareStrings(const string& str1, const string& str2, const IOMap& iomap, map<string, vector<int>> sup_map, vector<RNode*> circuit_root, vector<string> nodes)
 {
     if(iomap.iomap.at(str1).size() != iomap.iomap.at(str2).size()){
         return iomap.iomap.at(str1).size() < iomap.iomap.at(str2).size();
@@ -340,6 +394,8 @@ bool compareStrings(const string& str1, const string& str2, const IOMap& iomap, 
             if(sup_map[str1][i] != sup_map[str2][i])
                 return sup_map[str1][i] < sup_map[str2][i];
         }
+        // cout<<"Result: "<<obsCal(circuit_root, nodes, str1, str2)<<endl;
+        // return obsCal(circuit_root, nodes, str1, str2);
         return false;
     }
 }
@@ -356,6 +412,40 @@ bool equalsup(const string& str1,const string& str2, const IOMap& iomap, map<str
         }
     }
     return true;
+}
+
+bool equalobs(vector<RNode*> circuit_root,vector<string> input, string input_a, string input_b){
+    vector<pair<string, bool>> inputv_origin;
+    vector<pair<string, bool>> inputv_a;
+    vector<pair<string, bool>> inputv_b;
+	for(int i=0 ; i<input.size() ; i++)
+	{
+        inputv_origin.push_back(make_pair(input[i], true));
+        if(input[i] != input_a && input[i] != input_b)
+        {
+		    inputv_a.push_back(make_pair(input[i], true));
+            inputv_b.push_back(make_pair(input[i], true));
+        } else if(input[i] == input_a)
+        {
+		    inputv_a.push_back(make_pair(input[i], false));
+            inputv_b.push_back(make_pair(input[i], true));            
+        } else if(input[i] == input_b)
+        {
+		    inputv_a.push_back(make_pair(input[i], true));
+            inputv_b.push_back(make_pair(input[i], false)); 
+        }
+	}
+    int obs_a = 0;
+    int obs_b = 0;
+    for(int i=0 ; i<circuit_root.size() ; i++)
+    {
+        bool ori = circuit_operate(circuit_root[i], inputv_origin);
+        bool a_result = circuit_operate(circuit_root[i], inputv_a);
+        bool b_result = circuit_operate(circuit_root[i], inputv_b);
+        obs_a += (a_result == ori)? 0:1;
+        obs_b += (b_result == ori)? 0:1;
+    }
+    return obs_a == obs_b;
 }
 
 Circuit loadCircuit(string file_name){
@@ -438,7 +528,7 @@ Circuit loadCircuit(string file_name){
     return circuit;
 }
 
-vector<vector<string>> sort_sup(vector<string> nodes,IOMap primaryMap, IOMap secondaryMap){
+vector<vector<string>> sort_sup(vector<RNode*> circuit_root,vector<string> nodes,IOMap primaryMap, IOMap secondaryMap){
     vector<vector<string>> sup;
     vector<string> input;
     map<string, vector<int>> node_supmap;
@@ -453,7 +543,7 @@ vector<vector<string>> sort_sup(vector<string> nodes,IOMap primaryMap, IOMap sec
 
     input.assign(nodes.begin(), nodes.end());
     sort(input.begin(),input.end(), [&](string str1, string str2){
-        return compareStrings(str1,str2, primaryMap, node_supmap);
+        return compareStrings(str1,str2, primaryMap, node_supmap, circuit_root, nodes);
     });
 
 // Debug
@@ -471,7 +561,7 @@ vector<vector<string>> sort_sup(vector<string> nodes,IOMap primaryMap, IOMap sec
     {
         const std::string& currentString = input[i];
         const std::string& previousString = currentGroup.back();
-        if (equalsup(currentString, previousString, primaryMap,node_supmap)) {
+        if (equalsup(currentString, previousString, primaryMap,node_supmap) /*&& equalobs(circuit_root,nodes, currentString,previousString)*/) {
             currentGroup.push_back(currentString);
         } else {
             sup.push_back(currentGroup);
@@ -499,12 +589,10 @@ bool verify(RNode* output1, RNode* output2, vector<pair<string, bool>> inputs)
 	return circuit_operate(output1, inputs) == circuit_operate(output2, inputs);
 }
 
-int main() {
-    string input_name;
-    cout << "Please input your input ford name:";
-    cin>>input_name;
-	// input_name = "case02";
-    ifstream file(input_name+"/input");
+int main(int argc, char *argv[]) {
+    string input_name = argv[1];
+    string output_name = argv[2];
+    ifstream file(input_name);
     if (!file) {
         cout << "Can't open input file!" << endl;
         return 1;
@@ -547,8 +635,8 @@ int main() {
 
     //Load verilog data
     Circuit first_circuit, second_circuit;
-    first_circuit = loadCircuit(input_name+"/"+first_net);
-    second_circuit = loadCircuit(input_name+"/"+second_net);
+    first_circuit = loadCircuit(first_net);
+    second_circuit = loadCircuit(second_net);
 
     // print_circuit(first_circuit, second_circuit);
 
@@ -562,7 +650,7 @@ int main() {
 	
 //  Calculate boolean function output value
 
-/*	
+
     srand(time(NULL));
 	vector<pair<string, bool>> input_t;
 	for(int i=0 ; i<first_circuit.input.size() ; i++)
@@ -582,7 +670,7 @@ int main() {
 	for(int i=0 ; i<first_circuit_roots.size() ; i++)
 		cout<<first_circuit_roots[i]->gate.output<<" = "<<circuit_operate(first_circuit_roots[i], input_t)<<endl;
 	cout<<endl;
-*/    
+
 
 
 //  Debug Boolean function
@@ -590,31 +678,80 @@ int main() {
 /*
     print_booleanfunc(first_circuit, second_circuit,first_circuit_roots, second_circuit_roots);
 */
+    print_booleanfunc(first_circuit, second_circuit,first_circuit_roots, second_circuit_roots);
     construct_supmap(first_circuit_roots, first_inout, first_outin);
     construct_supmap(second_circuit_roots, second_inout, second_outin);
-
+    
+    // obsCal(first_circuit, first_circuit_roots, "n4", "n5");
 //  Debug in/out map
 
-/*
-    cout<<"Circuit1"<<endl;
-    print_map(first_inout);
-    print_map(first_outin);
-    cout<<"Circuit2"<<endl;
-    print_map(second_inout);
-    print_map(second_outin);
-*/
+
+    // cout<<"Circuit1"<<endl;
+    // print_map(first_inout);
+    // print_map(first_outin);
+    // cout<<"Circuit2"<<endl;
+    // print_map(second_inout);
+    // print_map(second_outin);
+
 
     cout<<"Circuit1"<<endl;
-    vector<vector<string>> first_insup = sort_sup(first_circuit.input, first_inout, first_outin);
+    vector<vector<string>> first_insup = sort_sup(first_circuit_roots,first_circuit.input, first_inout, first_outin);
     print_sup(first_insup);
-    vector<vector<string>> first_outsup = sort_sup(first_circuit.output, first_outin, first_inout);
+    vector<vector<string>> first_outsup = sort_sup(first_circuit_roots,first_circuit.output, first_outin, first_inout);
     print_sup(first_outsup);
     cout<<"Circuit2"<<endl;
-    vector<vector<string>> second_insup = sort_sup(second_circuit.input, second_inout, second_outin);
+    vector<vector<string>> second_insup = sort_sup(second_circuit_roots,second_circuit.input, second_inout, second_outin);
     print_sup(second_insup);
-    vector<vector<string>> second_outsup = sort_sup(second_circuit.output, second_outin, second_inout);
+    vector<vector<string>> second_outsup = sort_sup(second_circuit_roots,second_circuit.output, second_outin, second_inout);
     print_sup(second_outsup);
     
+
+//Output file
+    vector<IOgroup> outGrouplist;
+    vector<IOgroup> inGrouplist;
+    vector<IOgroup> constGrouplist;
+    ofstream outfile;
+    outfile.open(output_name);
+    for(IOgroup k: inGrouplist)
+    {
+        outfile<<"INGROUP"<<endl;
+        for(IOnode n: k.node_list)
+        {
+            if(n.positvie)
+                outfile<<n.circuit<<" + "<<n.name<<endl;
+            else    
+                outfile<<n.circuit<<" - "<<n.name<<endl;
+        }
+        outfile<<"END"<<endl;
+    }
+
+    for(IOgroup k: outGrouplist)
+    {
+        outfile<<"OUTGROUP"<<endl;
+        for(IOnode n: k.node_list)
+        {
+            if(n.positvie)
+                outfile<<n.circuit<<" + "<<n.name<<endl;
+            else    
+                outfile<<n.circuit<<" - "<<n.name<<endl;
+        }
+    }
+
+    for(IOgroup k: constGrouplist)
+    {
+        outfile<<"CONSTGROUP"<<endl;
+        for(IOnode n: k.node_list)
+        {
+            if(n.positvie)
+                outfile<<" + "<<n.name<<endl;
+            else    
+                outfile<<" - "<<n.name<<endl;
+        }
+        outfile<<"END"<<endl;
+    }
+    outfile.close();
+
+
     cout<<"Finished."<<endl;
         
     return 0;
