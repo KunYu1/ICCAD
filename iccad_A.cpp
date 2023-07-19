@@ -697,8 +697,8 @@ bool verify(RNode* output1, RNode* output2, vector<pair<string, bool>> inputs)
 }
 
 
-bool make_ingroups(Circuit, Circuit, Group, Group , ComparePairGroup,map<int ,int>);
-bool make_outgroups(Circuit, Circuit, Group, Group, ComparePairGroup);
+bool make_ingroups(Circuit, Circuit, Group, Group , ComparePairGroup, map<int ,int>);
+bool make_outgroups(Circuit, Circuit, Group, Group, ComparePairGroup, map<int ,int>);
 bool make_sign(Circuit, Circuit, Group, Group);
 bool give_value(Circuit, Circuit, Group, Group, int);
 void print_matching(Group, Group);
@@ -712,7 +712,7 @@ bool make_ingroups(Circuit first_circuit, Circuit second_circuit, Group Input, G
 	if(input1.empty() && input2.empty())
 	{
 		Output.groups.clear();
-		return make_outgroups(first_circuit, second_circuit, Input, Output, compareGroup);
+		return make_outgroups(first_circuit, second_circuit, Input, Output, compareGroup,check_map);
 	}
 	
 	// try all possible matching of two circuits
@@ -732,7 +732,7 @@ bool make_ingroups(Circuit first_circuit, Circuit second_circuit, Group Input, G
 		temp.push_back(input1_t[i]);
 		temp.push_back(in2);
 		input1_t.erase(input1_t.begin()+i);
-        // Whether the condition matches the comparison pair
+        // Whether the condition matches the support pair
         if(compareGroup.first_map_supin[temp[0]] != compareGroup.second_map_supin[temp[1]]){
             cout<<"error support pair!"<<endl;
             continue;            
@@ -762,10 +762,8 @@ bool make_ingroups(Circuit first_circuit, Circuit second_circuit, Group Input, G
 	return false;
 }
 
-bool make_outgroups(Circuit first_circuit, Circuit second_circuit, Group Input, Group Output, ComparePairGroup compareGroup)
+bool make_outgroups(Circuit first_circuit, Circuit second_circuit, Group Input, Group Output, ComparePairGroup compareGroup, map<int, int> check_map)
 {
-    // cout<<"Answer"<<endl;
-    // return false;
 	vector<string> output1 = Output.first;
 	vector<string> output2 = Output.second;
 	vector<vector<string>> out_groups = Output.groups;
@@ -781,6 +779,7 @@ bool make_outgroups(Circuit first_circuit, Circuit second_circuit, Group Input, 
 	
 	for(int i=0 ; i<output1.size() ; i++)
 	{
+        map<int, int> map_temp = check_map;
 		vector<string> output1_t = output1;
 		vector<vector<string>> out_groups_t = out_groups;
 		
@@ -789,16 +788,28 @@ bool make_outgroups(Circuit first_circuit, Circuit second_circuit, Group Input, 
 		temp.push_back(out2);
 		output1_t.erase(output1_t.begin()+i);
 		
-        // Whether the condition matches the comparison pair
+        // Whether the condition matches the support pair
         if(compareGroup.first_map_supout[temp[0]] != compareGroup.second_map_supout[temp[1]])
             continue;
+
+        // Whether the condition matches the comparison pair
+        if(map_temp.find(compareGroup.first_map_org[temp[0]]) != map_temp.end())
+        {
+            if(map_temp[compareGroup.first_map_org[temp[0]]] != compareGroup.second_map_org[temp[1]]){
+                cout<<"error comparison pair!"<<endl;
+                continue;
+            }
+        }	else
+        {
+            map_temp[compareGroup.first_map_org[temp[0]]] = compareGroup.second_map_org[temp[1]];
+        }
 
 		out_groups_t.push_back(temp);
 		
 		Group O;
 		O.assign(output1_t, output2, out_groups_t);
 		
-		if(make_outgroups(first_circuit, second_circuit, Input, O, compareGroup)) return true;
+		if(make_outgroups(first_circuit, second_circuit, Input, O, compareGroup, check_map)) return true;
 	}
 	
 	return false;
@@ -1072,6 +1083,7 @@ int main(int argc, char *argv[]) {
     vector<IOgroup> outGrouplist;
     vector<IOgroup> inGrouplist;
     vector<IOgroup> constGrouplist;
+    
     ofstream outfile;
     outfile.open(output_name);
     for(IOgroup k: inGrouplist)
