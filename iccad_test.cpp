@@ -12,6 +12,8 @@
 #include <unistd.h>
 using namespace std;
 
+int count = 0;
+
 map<string, int> logic_map{
     {"not",  0},
     {"and",  1},
@@ -33,17 +35,6 @@ map<int, string> logic_map_rev{
 	{6, "buf"},
 	{7, "nand"},
 };
-
-struct IOnode{
-    int circuit;
-    bool positvie;
-    string name;
-};
-struct IOgroup
-{
-    vector<IOnode> node_list;
-};
-
 
 struct Gate {
     int logic;
@@ -74,7 +65,6 @@ struct Module {
     vector<string> inputs;
     vector<Gate> gates;
 };
-
 struct Node_group
 {
     int n;
@@ -125,82 +115,7 @@ struct Group
 	vector<pair<string, bool>> first_value;
 	vector<pair<string, bool>> second_value;
 	
-	void assign(vector<string> a, vector<string> b, vector<vector<string>> c)
-    {
-        this->first = a; 
-        this->second = b; 
-        this->groups = c;
-    }
-};
-
-struct ComparePair
-{
-    vector<vector<string>> first;
-    vector<vector<string>> second;
-};
-
-
-struct ComparePairGroup
-{
-    ComparePair inout_org;
-    ComparePair input_sup;
-    ComparePair output_sup;
-    map<string, int> first_map_org;
-    map<string, int> second_map_org;
-    map<string, int> first_map_supout;
-    map<string, int> second_map_supout;
-    map<string, int> first_map_supin;
-    map<string, int> second_map_supin;
-    void construct_map()
-    {
-        // Construct origin pair map
-        for(int i = 0; i < this->inout_org.first.size();i++)
-        {
-            for(int j = 0; j < this->inout_org.first[i].size(); j++)
-            {
-                this->first_map_org[this->inout_org.first[i][j]] = i;
-            }
-        }
-        for(int i = 0; i < this->inout_org.second.size();i++)
-        {
-            for(int j = 0; j < this->inout_org.second[i].size(); j++)
-            {
-                this->second_map_org[this->inout_org.second[i][j]] = i;
-            }
-        }
-
-        // Construct intput support pair map
-        for(int i = 0; i < this->input_sup.first.size();i++)
-        {
-            for(int j = 0; j < this->input_sup.first[i].size(); j++)
-            {
-                this->first_map_supin[this->input_sup.first[i][j]] = i;
-            }
-        }
-        for(int i = 0; i < this->input_sup.second.size();i++)
-        {
-            for(int j = 0; j < this->input_sup.second[i].size(); j++)
-            {
-                this->second_map_supin[this->input_sup.second[i][j]] = i;
-            }
-        }
-
-        // Construct output support pair map
-        for(int i = 0; i < this->output_sup.first.size();i++)
-        {
-            for(int j = 0; j < this->output_sup.first[i].size(); j++)
-            {
-                this->first_map_supout[this->output_sup.first[i][j]] = i;
-            }
-        }
-        for(int i = 0; i < this->output_sup.second.size();i++)
-        {
-            for(int j = 0; j < this->output_sup.second[i].size(); j++)
-            {
-                this->second_map_supout[this->output_sup.second[i][j]] = i;
-            }
-        }
-    }
+	void assign(vector<string> a, vector<string> b, vector<vector<string>> c){this->first = a; this->second = b; this->groups = c;}
 };
 
 // Given the output name, find where the output comes from
@@ -233,10 +148,8 @@ vector<RNode*> create_graph(vector<Gate> gates_t, vector<string> inputs, vector<
 	// initialize the roots of the diagram
 	vector<RNode*> roots;
 	for(int i=0 ; i<outputs.size() ; i++)
-	{
 		if(find_gateind(gates, outputs[i]) != -1)
 			roots.push_back(gates[find_gateind(gates, outputs[i])]);
-	}
 	
 	//if the input of gate is exactly the input of circuit, then point to NULL.
 	//otherwise, point to the gate which generated that input.
@@ -272,29 +185,24 @@ string graph2func(RNode *root, vector<string> inputs)
 	}
 	
 	if(first == "")
-	{
 		first = graph2func(root->last1, inputs);
-	}
 	if(second == "" && logic != 0 && logic != 6)
-	{
 		second = graph2func(root->last2, inputs);
-	}
 	
 	string ans = "";
 	if(logic != 0 && logic != 6)
 	{
 		ans += "(";
 		ans += first; ans += " ";
-		ans += logic_map_rev[logic]; 
-        ans += " ";
+		ans += logic_map_rev[logic]; ans += " ";
 		ans += second;
-		ans += ")";	
+		ans += ")";
 	}
 	else if(logic == 0)
 	{
 		ans += "(not ";
 		ans += first;
-		ans += ")"; 
+		ans += ")";
 	}
 	else if(logic == 6)
 	{
@@ -334,9 +242,8 @@ bool gate_operate(int logic, bool a, bool b)
 bool circuit_operate(RNode* root, vector<pair<string, bool>> inputs)
 {
 	bool input1, input2, flag1, flag2;
-	flag1 = false; 
-    flag2 = false;
-	bool ifinput2 = !(root->gate.logic==0 || root->gate.logic==6);
+	flag1 = false; flag2 = false;
+	bool ifinput2 = !(root->gate.logic==0 || root->gate.logic==6); //if input2 exists or not
 	
 	for(int i=0 ; i<inputs.size() ; i++)
 		if(root->gate.input1 == inputs[i].first)
@@ -354,7 +261,7 @@ bool circuit_operate(RNode* root, vector<pair<string, bool>> inputs)
 	if(!flag1) input1 = circuit_operate(root->last1, inputs);
 	if(!flag2 && ifinput2) input2 = circuit_operate(root->last2, inputs);
 	if(! ifinput2) input2 = false; 
-
+	
 	return gate_operate(root->gate.logic, input1, input2);
 }
 
@@ -394,7 +301,7 @@ void print_map(const IOMap target_map)
         cout<<ele.first<<": ";
         for(string const& k:ele.second)
             cout<<k<<" ";
-        cout<<endl<<endl;
+        cout<<endl;
     }
     cout<<endl;
 }
@@ -430,55 +337,10 @@ void construct_supmap(const vector<RNode*> all_root, IOMap& inmap, IOMap& outmap
     }
 }
 
-bool obsCal(vector<RNode*> circuit_root,vector<string> input, string input_a, string input_b)
-{
-    vector<pair<string, bool>> inputv_origin;
-    vector<pair<string, bool>> inputv_a;
-    vector<pair<string, bool>> inputv_b;
-	for(int i=0 ; i<input.size() ; i++)
-	{
-        inputv_origin.push_back(make_pair(input[i], false));
-        if(input[i] != input_a && input[i] != input_b)
-        {
-		    inputv_a.push_back(make_pair(input[i], false));
-            inputv_b.push_back(make_pair(input[i], false));
-        } else if(input[i] == input_a)
-        {
-		    inputv_a.push_back(make_pair(input[i], true));
-            inputv_b.push_back(make_pair(input[i], false));            
-        } else if(input[i] == input_b)
-        {
-		    inputv_a.push_back(make_pair(input[i], false));
-            inputv_b.push_back(make_pair(input[i], true)); 
-        }
-	}
-    // for(const auto& k: inputv_a)
-    //     cout<<k.first<<" "<<k.second<<endl;
-    // cout<<"Size: "<<circuit_root.size()<<endl;
-	// for(int i=0 ; i<circuit_root.size() ; i++)
-    // {
-    //     cout<<i<<endl;
-	// 	cout<<circuit_root[i]->gate.output<<" = "<<circuit_operate(circuit_root[i], inputv_a)<<endl;
-    // }
-    int obs_a = 0;
-    int obs_b = 0;
-    for(int i=0 ; i<circuit_root.size() ; i++)
-    {
-        bool ori = circuit_operate(circuit_root[i], inputv_origin);
-        bool a_result = circuit_operate(circuit_root[i], inputv_a);
-        bool b_result = circuit_operate(circuit_root[i], inputv_b);
-        obs_a += (a_result == ori)? 0:1;
-        obs_b += (b_result == ori)? 0:1;
-    }
-    return obs_a < obs_b;
-}
-
-bool compareStrings(const string& str1, const string& str2, const IOMap& iomap, map<string, vector<int>> sup_map, vector<RNode*> circuit_root, vector<string> nodes, int inout)
+bool compareStrings(const string& str1, const string& str2, const IOMap& iomap, map<string, vector<int>> sup_map)
 {
     if(iomap.iomap.at(str1).size() != iomap.iomap.at(str2).size())
-    {
         return iomap.iomap.at(str1).size() < iomap.iomap.at(str2).size();
-    }
     else    
     {
         for(int i = 0; i < sup_map[str1].size(); i++)
@@ -486,10 +348,7 @@ bool compareStrings(const string& str1, const string& str2, const IOMap& iomap, 
             if(sup_map[str1][i] != sup_map[str2][i])
                 return sup_map[str1][i] < sup_map[str2][i];
         }
-        if(inout == 0)
-            return obsCal(circuit_root, nodes, str1, str2);
-        else
-            return false;
+        return 1;
     }
 }
 
@@ -505,40 +364,6 @@ bool equalsup(const string& str1,const string& str2, const IOMap& iomap, map<str
         }
     }
     return true;
-}
-
-bool equalobs(vector<RNode*> circuit_root,vector<string> input, string input_a, string input_b){
-    vector<pair<string, bool>> inputv_origin;
-    vector<pair<string, bool>> inputv_a;
-    vector<pair<string, bool>> inputv_b;
-	for(int i=0 ; i<input.size() ; i++)
-	{
-        inputv_origin.push_back(make_pair(input[i], false));
-        if(input[i] != input_a && input[i] != input_b)
-        {
-		    inputv_a.push_back(make_pair(input[i], false));
-            inputv_b.push_back(make_pair(input[i], false));
-        } else if(input[i] == input_a)
-        {
-		    inputv_a.push_back(make_pair(input[i], true));
-            inputv_b.push_back(make_pair(input[i], false));            
-        } else if(input[i] == input_b)
-        {
-		    inputv_a.push_back(make_pair(input[i], false));
-            inputv_b.push_back(make_pair(input[i], true)); 
-        }
-	}
-    int obs_a = 0;
-    int obs_b = 0;
-    for(int i=0 ; i<circuit_root.size() ; i++)
-    {
-        bool ori = circuit_operate(circuit_root[i], inputv_origin);
-        bool a_result = circuit_operate(circuit_root[i], inputv_a);
-        bool b_result = circuit_operate(circuit_root[i], inputv_b);
-        obs_a += (a_result == ori)? 0:1;
-        obs_b += (b_result == ori)? 0:1;
-    }
-    return obs_a == obs_b;
 }
 
 Circuit loadCircuit(string file_name){
@@ -621,13 +446,10 @@ Circuit loadCircuit(string file_name){
     return circuit;
 }
 
-// inout = in:0, out:1 
-vector<vector<string>> sort_sup(vector<RNode*> circuit_root,vector<string> nodes,IOMap primaryMap, IOMap secondaryMap, int inout){
+vector<vector<string>> sort_sup(vector<string> nodes,IOMap primaryMap, IOMap secondaryMap){
     vector<vector<string>> sup;
     vector<string> input;
     map<string, vector<int>> node_supmap;
-    for(string k:input)
-        cout<<k<<endl;
     for(const auto& ele: primaryMap.iomap)
     {
         for(string k: ele.second)
@@ -636,45 +458,31 @@ vector<vector<string>> sort_sup(vector<RNode*> circuit_root,vector<string> nodes
     }
 
     input.assign(nodes.begin(), nodes.end());
-    sort(input.begin(),input.end(), [&](string str1, string str2){
-        return compareStrings(str1,str2, primaryMap, node_supmap, circuit_root, nodes, inout);
+    sort(input.begin(),input.end(), [&](const string& str1, const string& str2){
+        return compareStrings(str1,str2, primaryMap, node_supmap);
     });
 
-// Debug
-/*
-    for(string k :input){
-        cout<<k<<" "<<primaryMap.iomap[k].size()<<": ";
-        for(int i: node_supmap[k])
-            cout<<i<<" ";
-        cout<<endl;
-    }
-*/
+//Debug
+    // for(string k :input){
+    //     cout<<k<<" "<<primaryMap.iomap[k].size()<<": ";
+    //     for(int i: node_supmap[k])
+    //         cout<<i<<" ";
+    //     cout<<endl;
+    // }
+
     vector<string> currentGroup;
     currentGroup.push_back(input[0]);
     for(int i = 1; i < input.size(); i++)
     {
         const std::string& currentString = input[i];
         const std::string& previousString = currentGroup.back();
-        if(inout = 0)
-        {
-            if (equalsup(currentString, previousString, primaryMap,node_supmap) && equalobs(circuit_root,nodes, currentString,previousString)) {
-                currentGroup.push_back(currentString);
-            } else {
-                sup.push_back(currentGroup);
-                currentGroup.clear();
-                currentGroup.push_back(currentString);
-            }
-        } else
-        {
-            if (equalsup(currentString, previousString, primaryMap,node_supmap)) {
-                currentGroup.push_back(currentString);
-            } else {
-                sup.push_back(currentGroup);
-                currentGroup.clear();
-                currentGroup.push_back(currentString);
-            }
+        if (equalsup(currentString, previousString, primaryMap,node_supmap)) {
+            currentGroup.push_back(currentString);
+        } else {
+            sup.push_back(currentGroup);
+            currentGroup.clear();
+            currentGroup.push_back(currentString);
         }
-
     }
     sup.push_back(currentGroup);
     return sup;
@@ -691,19 +499,20 @@ void print_sup(vector<vector<string>> sup){
     cout<<endl;
 }
 
-bool verify(RNode* output1, RNode* output2, vector<pair<string, bool>> inputs)
+bool verify(RNode* output1, RNode* output2, vector<pair<string, bool>> inputs1, vector<pair<string, bool>> inputs2)
 {
-	return circuit_operate(output1, inputs) == circuit_operate(output2, inputs);
+	cout<<"Verify: ";
+	cout<<circuit_operate(output1, inputs1)<<" "<<circuit_operate(output2, inputs2)<<endl;
+	return circuit_operate(output1, inputs1) == circuit_operate(output2, inputs2);
 }
 
-
-bool make_ingroups(Circuit, Circuit, Group, Group , ComparePairGroup,map<int ,int>);
-bool make_outgroups(Circuit, Circuit, Group, Group, ComparePairGroup);
+bool make_ingroups(Circuit, Circuit, Group, Group);
+bool make_outgroups(Circuit, Circuit, Group, Group);
 bool make_sign(Circuit, Circuit, Group, Group);
 bool give_value(Circuit, Circuit, Group, Group, int);
 void print_matching(Group, Group);
 
-bool make_ingroups(Circuit first_circuit, Circuit second_circuit, Group Input, Group Output, ComparePairGroup compareGroup, map<int, int> check_map)
+bool make_ingroups(Circuit first_circuit, Circuit second_circuit, Group Input, Group Output)
 {
 	vector<string> input1 = Input.first;
 	vector<string> input2 = Input.second;
@@ -712,7 +521,7 @@ bool make_ingroups(Circuit first_circuit, Circuit second_circuit, Group Input, G
 	if(input1.empty() && input2.empty())
 	{
 		Output.groups.clear();
-		return make_outgroups(first_circuit, second_circuit, Input, Output, compareGroup);
+		return make_outgroups(first_circuit, second_circuit, Input, Output);
 	}
 	
 	// try all possible matching of two circuits
@@ -722,7 +531,6 @@ bool make_ingroups(Circuit first_circuit, Circuit second_circuit, Group Input, G
 	
 	for(int i=0 ; i<input1.size() ; i++)
 	{
-        map<int, int> map_temp = check_map;
 		cout<<"Make Input for: "<<i<<endl;
 
 		vector<string> input1_t = input1;
@@ -732,40 +540,20 @@ bool make_ingroups(Circuit first_circuit, Circuit second_circuit, Group Input, G
 		temp.push_back(input1_t[i]);
 		temp.push_back(in2);
 		input1_t.erase(input1_t.begin()+i);
-        // Whether the condition matches the comparison pair
-        if(compareGroup.first_map_supin[temp[0]] != compareGroup.second_map_supin[temp[1]]){
-            cout<<"error support pair!"<<endl;
-            continue;            
-        }
-
-        // Whether the condition matches the comparison pair
-        
-        if(map_temp.find(compareGroup.first_map_org[temp[0]]) != map_temp.end())
-        {
-            if(map_temp[compareGroup.first_map_org[temp[0]]] != compareGroup.second_map_org[temp[1]]){
-                cout<<"error comparison pair!"<<endl;
-                continue;
-            }
-        }	else
-        {
-            map_temp[compareGroup.first_map_org[temp[0]]] = compareGroup.second_map_org[temp[1]];
-        }
-
+		
 		in_groups_t.push_back(temp);
-
 		
 		Group I;
 		I.assign(input1_t, input2, in_groups_t);
-		if(make_ingroups(first_circuit, second_circuit, I, Output, compareGroup, map_temp)) return true;
+		if(make_ingroups(first_circuit, second_circuit, I, Output)) return true;
+		break;
 	}
 	
 	return false;
 }
 
-bool make_outgroups(Circuit first_circuit, Circuit second_circuit, Group Input, Group Output, ComparePairGroup compareGroup)
+bool make_outgroups(Circuit first_circuit, Circuit second_circuit, Group Input, Group Output)
 {
-    // cout<<"Answer"<<endl;
-    // return false;
 	vector<string> output1 = Output.first;
 	vector<string> output2 = Output.second;
 	vector<vector<string>> out_groups = Output.groups;
@@ -789,16 +577,12 @@ bool make_outgroups(Circuit first_circuit, Circuit second_circuit, Group Input, 
 		temp.push_back(out2);
 		output1_t.erase(output1_t.begin()+i);
 		
-        // Whether the condition matches the comparison pair
-        if(compareGroup.first_map_supout[temp[0]] != compareGroup.second_map_supout[temp[1]])
-            continue;
-
 		out_groups_t.push_back(temp);
 		
 		Group O;
 		O.assign(output1_t, output2, out_groups_t);
 		
-		if(make_outgroups(first_circuit, second_circuit, Input, O, compareGroup)) return true;
+		if(make_outgroups(first_circuit, second_circuit, Input, O)) return true;
 	}
 	
 	return false;
@@ -821,48 +605,54 @@ bool make_sign(Circuit first_circuit, Circuit second_circuit, Group Input, Group
 	else if(!in_groups_t.empty())
 		for(int i=0 ; i<2 ; i++)
 		{
-			vector<pair<string, bool>> temp;
-			pair<string, bool> *t1 = new pair<string, bool>;
-			pair<string, bool> *t2 = new pair<string, bool>;
-			t1->first = in_groups_t[0][0];
-			t2->first = in_groups_t[0][1];
-			t1->second = true;
-			t2->second = i==0? true : false;
-			temp.push_back(*t1);
-			temp.push_back(*t2);
-			
-			vector<vector<pair<string, bool>>> tg = in_groups;
-			tg.push_back(temp);
-			
-			Group I = Input;
-			I.groups_sign = tg;
-			I.groups.erase(I.groups.begin());
-			
-			if(make_sign(first_circuit, second_circuit, I, Output)) return true;
+			//for(int j=0 ; j<2 ; j++)
+			//{
+				vector<pair<string, bool>> temp;
+				pair<string, bool> *t1 = new pair<string, bool>;
+				pair<string, bool> *t2 = new pair<string, bool>;
+				t1->first = in_groups_t[0][0];
+				t2->first = in_groups_t[0][1];
+				t1->second = true;
+				t2->second = i==0? true : false;
+				temp.push_back(*t1);
+				temp.push_back(*t2);
+				
+				vector<vector<pair<string, bool>>> tg = in_groups;
+				tg.push_back(temp);
+				
+				Group I = Input;
+				I.groups_sign = tg;
+				I.groups.erase(I.groups.begin());
+				
+				if(make_sign(first_circuit, second_circuit, I, Output)) return true;
+			//}
 		}
 	
 	else if(!out_groups_t.empty())
 	{
 		for(int i=0 ; i<2 ; i++)
 		{
-			vector<pair<string, bool>> temp;
-			pair<string, bool> *t1 = new pair<string, bool>;
-			pair<string, bool> *t2 = new pair<string, bool>;
-			t1->first = out_groups_t[0][0];
-			t2->first = out_groups_t[0][1];
-			t1->second = true;
-			t2->second = i==0 ? true : false;
-			temp.push_back(*t1);
-			temp.push_back(*t2);
-			
-			vector<vector<pair<string, bool>>> tg = out_groups;
-			tg.push_back(temp);
-			
-			Group O = Output;
-			O.groups_sign = tg;
-			O.groups.erase(O.groups.begin());
-			
-			if(make_sign(first_circuit, second_circuit, Input, O)) return true;
+			// for(int j=0 ; j<2 ; j++)
+			// {
+				vector<pair<string, bool>> temp;
+				pair<string, bool> *t1 = new pair<string, bool>;
+				pair<string, bool> *t2 = new pair<string, bool>;
+				t1->first = out_groups_t[0][0];
+				t2->first = out_groups_t[0][1];
+				t1->second = true;
+				t2->second = i==0 ? true : false;
+				temp.push_back(*t1);
+				temp.push_back(*t2);
+				
+				vector<vector<pair<string, bool>>> tg = out_groups;
+				tg.push_back(temp);
+				
+				Group O = Output;
+				O.groups_sign = tg;
+				O.groups.erase(O.groups.begin());
+				
+				if(make_sign(first_circuit, second_circuit, Input, O)) return true;
+			// }
 		}
 	}
 	else
@@ -874,18 +664,19 @@ bool make_sign(Circuit first_circuit, Circuit second_circuit, Group Input, Group
 
 bool give_value(Circuit first_circuit, Circuit second_circuit, Group Input, Group Output, int step=0)
 {
-    static int count = 0;
-
 	vector<vector<pair<string, bool>>> in_groups = Input.groups_sign;
+	
 	if(step == in_groups.size())
 	{
-    	count++;
+		extern int count;
+		count++;
 		cout<<"Count: "<<count<<endl;
 		print_matching(Input, Output);
 		for(int i=0 ; i<Output.first.size() ; i++)
 		{
 			RNode *node1 = first_circuit.roots[find_gateind(first_circuit.roots, Output.groups_sign[i][0].first)];
 			RNode *node2 = second_circuit.roots[find_gateind(second_circuit.roots, Output.groups_sign[i][1].first)];
+			//cout<<(int)(Output.groups_sign[i][0]) <<" "<<(int)(Output.groups_sign[i][1])<<endl;
 			bool same = (Output.groups_sign[i][0].second == Output.groups_sign[i][1].second);
 			
 			bool result1 = circuit_operate(node1, Input.first_value);
@@ -949,19 +740,21 @@ void print_matching(Group Input, Group Output)
 		cout<<first_sign<<out_groups[i][0].first<<" <-> "<<second_sign<<out_groups[i][1].first<<endl;
 	}
 	cout<<endl;
+	//sleep(1);
 }
 
-int main(int argc, char *argv[]) {
-    string input_name = argv[1];
-    string output_name = argv[2];
-    ifstream file(input_name);
+int main() {
+    string input_name;
+   cout << "Please input your input ford name:";
+   cin>>input_name;
+	// input_name = "case12";
+    ifstream file(input_name+"/input");
     if (!file) {
         cout << "Can't open input file!" << endl;
         return 1;
     }
-    ComparePairGroup compareGroup;
-    // vector<Node_group> node_groups_first;
-    // vector<Node_group> node_groups_second;
+    vector<Node_group> node_groups_first;
+    vector<Node_group> node_groups_second;
     Module top_module;
     string line;
     string first_net;
@@ -971,27 +764,29 @@ int main(int argc, char *argv[]) {
     file >> cnt;
     for(int i = 0;i<cnt;i++){
         int cnt_g;
-        vector<string> new_group;
+        Node_group new_group;
+        new_group.n = cnt_g;
         file>>cnt_g;
         for(int j = 0;j<cnt_g;j++){
             string node;
             file>>node;
-            new_group.push_back(node);
+            new_group.nodes.push_back(node);
         }
-        compareGroup.inout_org.first.push_back(new_group);
+        node_groups_first.push_back(new_group);
     }
     file >> second_net;
     file >> cnt;
     for(int i = 0;i<cnt;i++){
         int cnt_g;
-        vector<string> new_group;
+        Node_group new_group;
+        new_group.n = cnt_g;
         file>>cnt_g;
         for(int j = 0;j<cnt_g;j++){
             string node;
             file>>node;
-            new_group.push_back(node);
+            new_group.nodes.push_back(node);
         }
-        compareGroup.inout_org.second.push_back(new_group);
+        node_groups_second.push_back(new_group);
     }
 
     //Load verilog data
@@ -999,125 +794,82 @@ int main(int argc, char *argv[]) {
     first_circuit = loadCircuit(first_net);
     second_circuit = loadCircuit(second_net);
 
-    // print_circuit(first_circuit, second_circuit);
+    //print_circuit(first_circuit, second_circuit);
 
-    IOMap first_inout(first_circuit.input);
-    IOMap first_outin(first_circuit.output);
-    IOMap second_inout(second_circuit.input);
-    IOMap second_outin(second_circuit.output);
+//    IOMap first_inout(first_circuit.input);
+//    IOMap first_outin(first_circuit.output);
+//    IOMap second_inout(second_circuit.input);
+//    IOMap second_outin(second_circuit.output);
     
     vector<RNode*> first_circuit_roots = create_graph(first_circuit.gates, first_circuit.input, first_circuit.output);
     vector<RNode*> second_circuit_roots = create_graph(second_circuit.gates, second_circuit.input, second_circuit.output);
-	
+    
+
+	print_booleanfunc(first_circuit, second_circuit,first_circuit_roots, second_circuit_roots);
     first_circuit.roots = first_circuit_roots;
     second_circuit.roots = second_circuit_roots;
-
-//  Debug Boolean function
-
-/*
-    print_booleanfunc(first_circuit, second_circuit,first_circuit_roots, second_circuit_roots);
-*/
-    print_booleanfunc(first_circuit, second_circuit,first_circuit_roots, second_circuit_roots);
-    construct_supmap(first_circuit_roots, first_inout, first_outin);
-    construct_supmap(second_circuit_roots, second_inout, second_outin);
+	
+	cout<<"Comparing..."<<endl;
+	
+	Group Input, Output;
+	vector<vector<string>> at, bt;
+	Input.assign(first_circuit.input, second_circuit.input, at);
+	Output.assign(first_circuit.output, second_circuit.output, bt);
+	bool ans = make_ingroups(first_circuit, second_circuit, Input, Output);
+	
+	cout<<"Result = "<<ans<<endl;
+	
+//	srand(time(NULL));
+//	vector<pair<string, bool>> input_t;
+//	for(int i=0 ; i<first_circuit.input.size() ; i++)
+//	{
+//		pair<string, bool> temp;
+//		temp.first = first_circuit.input[i];
+//		temp.second = rand()%2 ? true : false;
+//		input_t.push_back(temp);
+//	}
+//	
+//	cout<<"Input of Circuit 1: "<<endl;
+//	for(int i=0 ; i<input_t.size() ; i++)
+//		cout<<input_t[i].first<<" = "<<input_t[i].second<<endl;
+//	cout<<endl;
+//	
+//	cout<<"Output of Circuit 1: "<<endl;
+//	for(int i=0 ; i<first_circuit_roots.size() ; i++)
+//		cout<<first_circuit_roots[i]->gate.output<<" = "<<circuit_operate(first_circuit_roots[i], input_t)<<endl;
+//	cout<<endl;
     
-    // obsCal(first_circuit, first_circuit_roots, "n4", "n5");
-//  Debug in/out map
-
-    // cout<<"Circuit1"<<endl;
-    // print_map(first_inout);
-    // print_map(first_outin);
-    // cout<<"Circuit2"<<endl;
-    // print_map(second_inout);
-    // print_map(second_outin);
-
-
-    cout<<"Circuit1"<<endl;
-    vector<vector<string>> first_insup = sort_sup(first_circuit_roots,first_circuit.input, first_inout, first_outin, 1);
-    print_sup(first_insup);
-    vector<vector<string>> first_outsup = sort_sup(first_circuit_roots,first_circuit.output, first_outin, first_inout, 1);
-    print_sup(first_outsup);
-    cout<<"Circuit2"<<endl;
-    vector<vector<string>> second_insup = sort_sup(second_circuit_roots,second_circuit.input, second_inout, second_outin, 1);
-    print_sup(second_insup);
-    vector<vector<string>> second_outsup = sort_sup(second_circuit_roots,second_circuit.output, second_outin, second_inout, 1);
-    print_sup(second_outsup);
-    
-    compareGroup.input_sup.first = first_insup;
-    compareGroup.input_sup.second = second_insup;
-    compareGroup.output_sup.first = first_outsup;
-    compareGroup.output_sup.second = second_outsup;
-    compareGroup.construct_map();
-
-// 	Boolean function matching
-
-    int conv = strtol(argv[3],NULL, 10);
-    if(conv)
-    {
-        cout<<"Comparing..."<<endl;
-        
-        Group Input, Output;
-        map<int, int> org_map;
-        vector<vector<string>> at, bt;
-        Input.assign(first_circuit.input, second_circuit.input, at);
-        Output.assign(first_circuit.output, second_circuit.output, bt);
-        bool ans = make_ingroups(first_circuit, second_circuit, Input, Output, compareGroup, org_map);
-        
-        cout<<"Result = "<<ans<<endl;
-    }
 
 
 
-// Output file
-    vector<IOgroup> outGrouplist;
-    vector<IOgroup> inGrouplist;
-    vector<IOgroup> constGrouplist;
-    ofstream outfile;
-    outfile.open(output_name);
-    for(IOgroup k: inGrouplist)
-    {
-        outfile<<"INGROUP"<<endl;
-        for(IOnode n: k.node_list)
-        {
-            if(n.positvie)
-                outfile<<n.circuit<<" + "<<n.name<<endl;
-            else    
-                outfile<<n.circuit<<" - "<<n.name<<endl;
-        }
-        outfile<<"END"<<endl;
-    }
-
-    for(IOgroup k: outGrouplist)
-    {
-        outfile<<"OUTGROUP"<<endl;
-        for(IOnode n: k.node_list)
-        {
-            if(n.positvie)
-                outfile<<n.circuit<<" + "<<n.name<<endl;
-            else    
-                outfile<<n.circuit<<" - "<<n.name<<endl;
-        }
-    }
-
-    for(IOgroup k: constGrouplist)
-    {
-        outfile<<"CONSTGROUP"<<endl;
-        for(IOnode n: k.node_list)
-        {
-            if(n.positvie)
-                outfile<<" + "<<n.name<<endl;
-            else    
-                outfile<<" - "<<n.name<<endl;
-        }
-        outfile<<"END"<<endl;
-    }
-    outfile.close();
-
-
-    cout<<"Finished."<<endl;
-        
+//    print_booleanfunc(first_circuit, second_circuit,first_circuit_roots, second_circuit_roots);
+//
+//    construct_supmap(first_circuit_roots, first_inout, first_outin);
+//    construct_supmap(second_circuit_roots, second_inout, second_outin);
+//
+//    cout<<"Circuit1"<<endl;
+//    print_map(first_inout);
+//    print_map(first_outin);
+//    cout<<"Circuit2"<<endl;
+//    print_map(second_inout);
+//    print_map(second_outin);
+//
+//    cout<<"Circuit1"<<endl;
+//    vector<vector<string>> first_insup = sort_sup(first_circuit.input, first_inout, first_outin);
+//    print_sup(first_insup);
+//    vector<vector<string>> first_outsup = sort_sup(first_circuit.output, first_outin, first_inout);
+//    print_sup(first_outsup);
+//    cout<<"Circuit2"<<endl;
+//    vector<vector<string>> second_insup = sort_sup(second_circuit.input, second_inout, second_outin);
+//    print_sup(second_insup);
+//    vector<vector<string>> second_outsup = sort_sup(second_circuit.output, second_outin, second_inout);
+//    print_sup(second_outsup);
+ 
+	cout<<"Finished."<<endl;
+	
     return 0;
 }
+
 
 
 
